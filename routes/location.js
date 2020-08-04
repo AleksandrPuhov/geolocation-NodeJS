@@ -1,5 +1,5 @@
 const express = require('express');
-const MongoClient = require('mongodb').MongoClient;
+const { MongoClient, ObjectId } = require('mongodb');
 
 const router = express.Router();
 
@@ -38,34 +38,28 @@ router.post('/add-location', async (req, res, next) => {
     }
 });
 
-// router.post('/add-location', (req, res, next) => {
-//     client.connect(function (err, client) {
-//         const db = client.db('locations');
+router.get('/location/:locId', async (req, res, next) => {
+    const locationId = req.params.locId;
 
-//         db.collection('user-locations').insertOne(
-//             {
-//                 address: req.body.address,
-//                 coords: {
-//                     lat: req.body.lat,
-//                     lng: req.body.lng,
-//                 },
-//             },
-//             function (err, r) {
-//                 res.json({ message: 'Stored location!', locId: r.insertedId });
-//             }
-//         );
-//     });
-// });
+    try {
+        await client.connect();
 
-router.get('/location/:locId', (req, res, next) => {
-    const locationId = +req.params.locId;
-    const location = locationStorage.locations.find(
-        (loc) => loc.id === locationId
-    );
-    if (!location) {
-        return res.status(404).json({ message: 'Not found!' });
+        const database = client.db(dbName);
+        const collection = database.collection(collectionName);
+
+        const location = await collection.findOne({
+            _id: ObjectId(locationId),
+        });
+
+        if (!location) {
+            return res.status(404).json({ message: 'Not found!' });
+        }
+        res.json({ address: location.address, coorditates: location.coords });
+    } catch (er) {
+        console.log(er);
+    } finally {
+        await client.close();
     }
-    res.json({ address: location.address, coorditates: location.coords });
 });
 
 module.exports = router;
